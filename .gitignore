@@ -1,0 +1,27 @@
+# Dependências e builds do frontend
+frontend/node_modules/
+frontend/dist/
+
+# Dependências e builds do .NET
+**/bin/
+**/obj/
+
+# Arquivos de ambiente e segredos
+.env
+.env.*
+!.env.example
+**/appsettings.*.json
+
+# Arquivos e configurações locais
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Cobertura de testes
+coverage/
