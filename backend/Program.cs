@@ -21,6 +21,9 @@ app.UseHttpsRedirection();
 
 app.UseCors("Frontend");
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapGet("/", () =>
 {
     return Results.Ok($"Hello World!");

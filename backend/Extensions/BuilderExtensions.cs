@@ -29,7 +29,8 @@ public static class BuilderExtensions
                 policy
                     .WithOrigins(frontendUrl)
                     .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    .AllowAnyMethod()
+                    .AllowCredentials();
             });
         });
 
