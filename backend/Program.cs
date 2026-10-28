@@ -41,5 +41,6 @@ app.MapGet("/health/db", async (PartyUpContext db) =>
 });
 
 app.MapAuthEndpoints();
+app.MapProfileEndpoints();
 
 app.Run();
