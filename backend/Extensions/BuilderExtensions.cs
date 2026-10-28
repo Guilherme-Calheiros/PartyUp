@@ -34,6 +34,12 @@ public static class BuilderExtensions
             });
         });
 
+        builder.Services.ConfigureApplicationCookie(opt =>
+        {
+            opt.ExpireTimeSpan = TimeSpan.FromDays(7);
+            opt.SlidingExpiration = true;
+        });
+
         return builder;
     }
 }

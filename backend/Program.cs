@@ -38,6 +38,6 @@ app.MapGet("/health/db", async (PartyUpContext db) =>
         : Results.Problem("Não foi possível conectar ao banco.");
 });
 
-app.MapAuthEndpoits();
+app.MapAuthEndpoints();
 
 app.Run();
