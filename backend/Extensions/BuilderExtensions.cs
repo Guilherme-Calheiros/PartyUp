@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using Resend;
 
 namespace PartyUp.Extensions;
 
@@ -38,6 +39,11 @@ public static class BuilderExtensions
         {
             opt.ExpireTimeSpan = TimeSpan.FromDays(7);
             opt.SlidingExpiration = true;
+        });
+
+        builder.Services.AddResend(opt =>
+        {
+            opt.ApiToken = builder.Configuration["Resend:ApiKey"] ?? throw new InvalidOperationException("A chave da API do Resend não foi configurada.");
         });
 
         return builder;

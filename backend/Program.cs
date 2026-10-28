@@ -1,3 +1,5 @@
+using Resend;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServices();

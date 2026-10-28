@@ -1,10 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using PartyUp.Contracts.Auth;
 using PartyUp.Models;
+using Resend;
 
 namespace PartyUp.Endpoints;
 
@@ -131,6 +134,109 @@ public static class AuthEndpoints
             }
 
             return Results.Ok(new { message = "Usuário logado com sucesso" });
+
+        });
+
+        auth.MapPost("forgotPassword", async (
+            UserManager<IdentityUser> userManager,
+            IResend resend,
+            IConfiguration configuration,
+            [FromBody] ForgotPasswordRequest request) =>
+        {
+            var user = await userManager.FindByEmailAsync(request.Email);
+
+            if (user is not null)
+            {
+                var token =
+                    await userManager.GeneratePasswordResetTokenAsync(user);
+
+                var encodedToken = WebEncoders.Base64UrlEncode(
+                    Encoding.UTF8.GetBytes(token)
+                );
+
+                var frontendUrl = configuration["FrontendUrl"] ?? throw new InvalidOperationException("FrontendUrl não configurada");
+                var emailFrom = configuration["EmailFrom"] ?? throw new InvalidOperationException("Email de envio não configurado");
+
+                var resetUrl =
+                    $"{frontendUrl.TrimEnd('/')}/reset-password" +
+                    $"?email={Uri.EscapeDataString(user.Email!)}" +
+                    $"&token={Uri.EscapeDataString(encodedToken)}";
+
+                var email = new EmailMessage
+                {
+                    From = $"PartyUp <{emailFrom}>",
+                    Subject = "Redefinição de senha - PartyUp",
+                    HtmlBody = $"""
+                        <h1>Redefinir sua senha</h1>
+                        <p>Recebemos uma solicitação para redefinir
+                        a senha da sua conta PartyUp.</p>
+                        <p>
+                            <a href="{resetUrl}">
+                                Redefinir minha senha
+                            </a>
+                        </p>
+                        <p>Se você não solicitou essa alteração,
+                        ignore este e-mail.</p>
+                        """,
+                    TextBody = $"""
+                        Para redefinir sua senha do PartyUp, acesse:
+                        {resetUrl}
+
+                        Se você não solicitou essa alteração,
+                        ignore este e-mail.
+                        """
+                };
+
+                email.To.Add(user.Email!);
+
+                await resend.EmailSendAsync(email);
+            }
+
+            return Results.Ok(new
+            {
+                message = "Se a conta existir, você receberá as instruções por e-mail."
+            });
+        });
+
+        auth.MapPost("resetPassword", async (
+            UserManager<IdentityUser> userManager,
+            [FromBody] ResetPasswordRequest request) =>
+        {
+            var user = await userManager.FindByEmailAsync(request.Email);
+            if (user is null)
+            {
+                return Results.BadRequest(new
+                {
+                    message = "Não foi possível redefinir a senha."
+                });
+            }
+
+            var decodedToken = Encoding.UTF8.GetString(
+                WebEncoders.Base64UrlDecode(request.ResetCode)
+            );
+
+            var result = await userManager.ResetPasswordAsync(
+                user,
+                decodedToken,
+                request.NewPassword
+            );
+
+            if (!result.Succeeded)
+            {
+                return Results.BadRequest(new
+                {
+                    errors = result.Errors.Select(error => new
+                    {
+                        error.Code,
+                        error.Description
+                    })
+                });
+            }
+
+            return Results.Ok(new
+            {
+                message = "Senha redefinida com sucesso."
+            });
 
         });
 
