@@ -3,21 +3,15 @@ import { Navigate, Outlet, useLocation } from "react-router";
 
 export default function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuth();
-  const location =  useLocation();
+  const location = useLocation();
 
   if (isLoading) {
     return <p>Carregando...</p>;
   }
 
-  if(!isAuthenticated){
-    return (
-      <Navigate 
-        to="/login"
-        state={{ from: location }}
-        replace
-      />
-    )
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return <Outlet />
+  return <Outlet />;
 }

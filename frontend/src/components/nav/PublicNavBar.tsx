@@ -1,4 +1,3 @@
-
 import { NavLink } from "react-router";
 import { Button } from "@/components/ui/button";
 
@@ -8,9 +7,7 @@ function Logo() {
       to="/"
       className="focus-visible:ring-ring flex items-center gap-2 rounded-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
     >
-      <span className="text-base font-semibold tracking-tight">
-        PartyUp
-      </span>
+      <span className="text-base font-semibold tracking-tight">PartyUp</span>
     </NavLink>
   );
 }
@@ -23,18 +20,11 @@ export default function PublicNavbar() {
 
         <nav aria-label="Navegação principal">
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              render={<NavLink to="/login" />}
-            >
+            <Button variant="ghost" size="sm" render={<NavLink to="/login" />}>
               Entrar
             </Button>
 
-            <Button
-              size="sm"
-              render={<NavLink to="/register" />}
-            >
+            <Button size="sm" render={<NavLink to="/register" />}>
               Cadastrar
             </Button>
           </div>

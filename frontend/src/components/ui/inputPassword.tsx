@@ -1,20 +1,20 @@
-"use client"
+"use client";
 
-import { Eye, EyeOff } from "lucide-react"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 type InputPasswordProps = {
-  label?: string
-  placeholder?: string
-  htmlFor?: string
-  forgotPasswordLink?: string
-  value: string,
-  onChange: (value: string) => void
-  required?: boolean
-}
+  label?: string;
+  placeholder?: string;
+  htmlFor?: string;
+  forgotPasswordLink?: string;
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+};
 
 const InputPassword = ({
   label = "Senha",
@@ -25,7 +25,7 @@ const InputPassword = ({
   onChange,
   required = false,
 }: InputPasswordProps) => {
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="flex w-full flex-col gap-2">
@@ -64,7 +64,7 @@ const InputPassword = ({
         </Button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default InputPassword
+export default InputPassword;

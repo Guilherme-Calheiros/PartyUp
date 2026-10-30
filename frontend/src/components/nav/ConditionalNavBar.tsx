@@ -2,7 +2,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedNavBar from "./AuthenticatedNavBar";
 import PublicNavBar from "./PublicNavBar";
 
-
 export default function ConditionalNavbar() {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -10,7 +9,5 @@ export default function ConditionalNavbar() {
     return null;
   }
 
-  return isAuthenticated
-    ? <AuthenticatedNavBar />
-    : <PublicNavBar />;
+  return isAuthenticated ? <AuthenticatedNavBar /> : <PublicNavBar />;
 }
