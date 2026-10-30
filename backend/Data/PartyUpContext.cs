@@ -8,7 +8,8 @@ namespace PartyUp.Data;
 public class PartyUpContext : IdentityDbContext<IdentityUser>
 {
     public PartyUpContext(DbContextOptions<PartyUpContext> options) :
-        base(options) { }
+        base(options)
+    { }
 
     public DbSet<UserModel> UsersProfile { get; set; } = null!;
     public DbSet<GroupModel> Groups { get; set; } = null!;
@@ -51,8 +52,8 @@ public class PartyUpContext : IdentityDbContext<IdentityUser>
         {
             entity.HasKey(member => new
             {
-               member.UserId,
-               member.GroupId 
+                member.UserId,
+                member.GroupId
             });
 
             entity.HasOne(member => member.User)

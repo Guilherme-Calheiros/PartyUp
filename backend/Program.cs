@@ -36,7 +36,7 @@ app.MapGet("/health/db", async (PartyUpContext db) =>
     var canConnect = await db.Database.CanConnectAsync();
 
     return canConnect
-        ? Results.Ok(new { database = "connected"})
+        ? Results.Ok(new { database = "connected" })
         : Results.Problem("Não foi possível conectar ao banco.");
 });
 

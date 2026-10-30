@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Resend;
 
 namespace PartyUp.Extensions;
@@ -14,7 +14,7 @@ public static class BuilderExtensions
 
         builder.Services.AddOpenApi();
 
-        builder.Services.AddDbContext<PartyUpContext>(opt => 
+        builder.Services.AddDbContext<PartyUpContext>(opt =>
             opt.UseNpgsql(connectionString));
 
         builder.Services.AddAuthorization();

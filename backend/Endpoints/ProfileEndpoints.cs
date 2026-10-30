@@ -13,7 +13,7 @@ public static class ProfileEndpoints
 
         profile.MapGet("me", async (
             ClaimsPrincipal user,
-            PartyUpContext context) => 
+            PartyUpContext context) =>
         {
             var identityId = user.FindFirstValue(
                 ClaimTypes.NameIdentifier
