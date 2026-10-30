@@ -1,17 +1,22 @@
 import { apiFetch } from "@/lib/api";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-type User = {
+export type User = {
     userName: string;
+    email: string;
     avatarSeed: string;
     profilePictureUrl: string | null;
+}
+
+type RefreshUserOptions = {
+    silent?: boolean;
 }
 
 type AuthContextType = {
     user: User | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-    refreshUser: () => Promise<void>;
+    refreshUser: (options?: RefreshUserOptions) => Promise<void>;
     logout: () => Promise<void>;
 }
 
@@ -25,8 +30,10 @@ export function AuthProvider({children}: AuthProviderProps) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    async function refreshUser(){
-        setIsLoading(true);
+    async function refreshUser(options?: RefreshUserOptions){
+        if (!options?.silent) {
+            setIsLoading(true);
+        }
 
         try {
             const response = await apiFetch("/profile/me");
@@ -42,7 +49,9 @@ export function AuthProvider({children}: AuthProviderProps) {
             console.error(error);
             setUser(null);
         } finally {
-            setIsLoading(false);
+            if (!options?.silent) {
+                setIsLoading(false);
+            }
         }
     }
 

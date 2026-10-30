@@ -35,6 +35,7 @@ public static class ProfileEndpoints
             return Results.Ok(new
             {
                 profile.UserName,
+                profile.Email,
                 profile.AvatarSeed,
                 profile.ProfilePictureUrl
             });
@@ -119,6 +120,7 @@ public static class ProfileEndpoints
             return Results.Ok(new
             {
                 profile.UserName,
+                profile.Email,
                 profile.AvatarSeed,
                 profile.ProfilePictureUrl
             });

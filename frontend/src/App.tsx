@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router"
 import LoginPage from "./pages/LoginPage"
 import RegisterPage from "./pages/RegisterPage"
 import ResetPasswordPage from "./pages/ResetPasswordPage"
+import ProfilePage from "./pages/ProfilePage"
 import ProtectedRoute from "./components/ProtectedRoute"
 import GuestRoute from "./components/GuestRoute"
 import ConditionalNavbar from "./components/nav/ConditionalNavBar"
@@ -23,7 +24,7 @@ function App() {
                   <Route path="/grupos" element={<h1>Grupos</h1>} />
                   <Route path="/agenda" element={<h1>Agenda</h1>} />
                   <Route path="/jogos" element={<h1>Jogos</h1>} />
-                  <Route path="/perfil" element={<h1>Perfil</h1>} />
+                  <Route path="/perfil" element={<ProfilePage />} />
                 </Route>
               </Route>
               <Route element={<GuestRoute/>}>

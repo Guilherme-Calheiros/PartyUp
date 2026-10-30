@@ -1,5 +1,6 @@
 
-import { Home, Users, Calendar, Gamepad2, User, LogOut } from "lucide-react";
+import { Home, Users, Calendar, Gamepad2, User, LogOut, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -40,13 +41,29 @@ export default function AuthenticatedNavbar() {
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
+    const [logoutError, setLogoutError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!logoutError) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            setLogoutError(null);
+        }, 5000);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [logoutError]);
 
     async function handleLogout() {
+        setLogoutError(null);
+
         try {
             await logout();
             navigate("/login", { replace: true });
         } catch (error) {
             console.error("Erro ao fazer logout:", error);
+            setLogoutError("Não foi possível sair. Tente novamente.");
         }
     }
 
@@ -101,21 +118,38 @@ export default function AuthenticatedNavbar() {
                             />
                         </DropdownMenuTrigger>
 
-                        <DropdownMenuContent align="end" sideOffset={8} className="w-44">
-                            <div className="px-2 py-1.5 text-sm font-medium">
-                                {user?.userName ?? "Minha conta"}
+                        <DropdownMenuContent align="end" sideOffset={8} className="w-64">
+                            <div className="flex items-center gap-3 px-2 py-2">
+                                <UserAvatar
+                                    seed={user?.avatarSeed ?? ""}
+                                    profilePictureUrl={user?.profilePictureUrl ?? null}
+                                    size={40}
+                                />
+                                <div className="min-w-0">
+                                    <p className="truncate text-sm font-medium">
+                                        {user?.userName ?? "Minha conta"}
+                                    </p>
+                                    <p className="truncate text-xs text-muted-foreground">
+                                        {user?.email ?? ""}
+                                    </p>
+                                </div>
                             </div>
+
+                            <DropdownMenuSeparator />
 
                             <DropdownMenuItem
                                 render={<NavLink to="/perfil" className="flex items-center" />}
                             >
                                 <User className="mr-2 h-4 w-4" />
-                                Perfil
+                                Ver perfil
                             </DropdownMenuItem>
 
                             <DropdownMenuSeparator />
 
-                            <DropdownMenuItem onClick={handleLogout}>
+                            <DropdownMenuItem
+                                variant="destructive"
+                                onClick={handleLogout}
+                            >
                                 <LogOut className="mr-2 h-4 w-4" />
                                 Sair
                             </DropdownMenuItem>
@@ -154,6 +188,23 @@ export default function AuthenticatedNavbar() {
                     </ul>
                 </nav>
             </div>
+
+            {logoutError && (
+                <div
+                    role="alert"
+                    className="fixed right-4 bottom-20 z-50 flex items-center gap-2 rounded-lg border border-destructive/20 bg-background px-3 py-2 text-sm font-medium text-destructive shadow-lg md:bottom-4"
+                >
+                    <span>{logoutError}</span>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Fechar aviso"
+                        onClick={() => setLogoutError(null)}
+                    >
+                        <X className="size-4" />
+                    </Button>
+                </div>
+            )}
         </>
     );
 }
