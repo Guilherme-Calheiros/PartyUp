@@ -14,6 +14,21 @@ namespace PartyUp.Endpoints;
 public static class AuthEndpoints
 {
     private static readonly EmailAddressAttribute _emailAddressAttribute = new EmailAddressAttribute();
+
+    private static string GetChangePasswordErrorMessage(IdentityError error) =>
+        error.Code switch
+        {
+            "PasswordMismatch" => "A senha atual está incorreta.",
+            "PasswordTooShort" => "A nova senha é muito curta.",
+            "PasswordTooLong" => "A nova senha é muito longa.",
+            "PasswordRequiresNonAlphanumeric" => "A nova senha deve conter pelo menos um caractere especial.",
+            "PasswordRequiresDigit" => "A nova senha deve conter pelo menos um número.",
+            "PasswordRequiresLower" => "A nova senha deve conter pelo menos uma letra minúscula.",
+            "PasswordRequiresUpper" => "A nova senha deve conter pelo menos uma letra maiúscula.",
+            "PasswordRequiresUniqueChars" => "A nova senha deve conter mais caracteres diferentes.",
+            _ => "Não foi possível alterar a senha."
+        };
+
     public static WebApplication MapAuthEndpoints(this WebApplication app)
     {
         var auth = app.MapGroup("/auth").WithTags("Authentication");
@@ -269,7 +284,11 @@ public static class AuthEndpoints
 
             if (!result.Succeeded)
             {
-                return Results.BadRequest(result.Errors);
+                return Results.BadRequest(result.Errors.Select(error => new
+                {
+                    error.Code,
+                    Description = GetChangePasswordErrorMessage(error)
+                }));
             }
 
             return Results.Ok(new { message = "Senha alterada com sucesso" });

@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
 import { MailCheck } from "lucide-react"
-import { apiFetch } from "@/lib/api"
+import { apiFetch, getApiErrorMessage } from "@/lib/api"
 import { forgotPasswordSchema, type ForgotPasswordRequest } from "@/schemas/auth/forgot-password-schema"
 import { toFieldErrors } from "@/schemas/utils"
 
@@ -47,13 +47,19 @@ export default function ForgotPasswordForm({ ...props }: React.ComponentProps<ty
             )
 
             if (!response.ok) {
-                throw new Error("Não foi possível solicitar a redefinição de senha.")
+                throw new Error(
+                    await getApiErrorMessage(response, "Não foi possível solicitar a redefinição de senha.")
+                )
             }
 
             setIsEmailSent(true)
         } catch (error) {
             console.error("Erro ao solicitar redefinição de senha:", error)
-            setRequestError("Não foi possível solicitar a redefinição de senha. Tente novamente.")
+            setRequestError(
+                error instanceof Error
+                    ? error.message
+                    : "Não foi possível solicitar a redefinição de senha. Tente novamente."
+            )
         } finally {
             setIsSubmitting(false)
         }

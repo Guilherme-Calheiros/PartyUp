@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input"
 import InputPassword from "./ui/inputPassword"
 import { useState } from "react"
 import { CheckCircle2 } from "lucide-react"
-import { apiFetch } from "@/lib/api"
+import { apiFetch, getApiErrorMessage } from "@/lib/api"
 import { useNavigate, useSearchParams } from "react-router"
 import { resetPasswordSchema, type ResetPasswordRequest } from "@/schemas/auth/reset-password-schema"
 import { toFieldErrors } from "@/schemas/utils"
@@ -65,13 +65,19 @@ export default function ResetPasswordForm({ ...props }: React.ComponentProps<typ
             )
 
             if (!response.ok) {
-                throw new Error("Não foi possível redefinir a senha.")
+                throw new Error(
+                    await getApiErrorMessage(response, "Não foi possível redefinir a senha.")
+                )
             }
 
             setIsPasswordReset(true)
         } catch (error) {
             console.error("Erro ao redefinir senha:", error)
-            setRequestError("Não foi possível redefinir a senha. Verifique se o link é válido ou solicite um novo.")
+            setRequestError(
+                error instanceof Error
+                    ? error.message
+                    : "Não foi possível redefinir a senha. Verifique se o link é válido ou solicite um novo."
+            )
         } finally {
             setIsSubmitting(false)
         }

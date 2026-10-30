@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input"
 import InputPassword from "./ui/inputPassword"
 import { useState } from "react"
 
-import { apiFetch } from "@/lib/api"
+import { apiFetch, getApiErrorMessage } from "@/lib/api"
 import { useNavigate, useLocation } from "react-router"
 import { loginSchema, type LoginRequest } from "@/schemas/auth/login-schema"
 import { toFieldErrors } from "@/schemas/utils"
@@ -32,6 +32,8 @@ export function LoginForm({
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [errors, setErrors] = useState<Partial<Record<keyof LoginRequest, string>>>({});
+    const [requestError, setRequestError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const { refreshUser} = useAuth();
 
     const navigate = useNavigate();
@@ -52,6 +54,9 @@ export function LoginForm({
             return
         }
 
+        setRequestError(null)
+        setIsSubmitting(true)
+
         try {
             const response = await apiFetch("/auth/login",
                 {
@@ -61,14 +66,23 @@ export function LoginForm({
             );
 
             if (!response.ok) {
-                throw new Error("Não foi possível fazer login.")
+                throw new Error(
+                    await getApiErrorMessage(response, "Não foi possível fazer login.")
+                )
             }
 
-            refreshUser()
+            await refreshUser()
             handleReset()
             navigate(from, { replace: true });
         } catch (error) {
             console.error("Erro ao fazer login:", error)
+            setRequestError(
+                error instanceof Error
+                    ? error.message
+                    : "Não foi possível fazer login."
+            )
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -115,8 +129,15 @@ export function LoginForm({
                                 />
                                 {errors.password && <FieldError>{errors.password}</FieldError>}
                             </Field>
+                            {requestError && (
+                                <Field data-invalid>
+                                    <FieldError>{requestError}</FieldError>
+                                </Field>
+                            )}
                             <Field>
-                                <Button type="submit">Entrar</Button>
+                                <Button type="submit" disabled={isSubmitting}>
+                                    {isSubmitting ? "Entrando..." : "Entrar"}
+                                </Button>
                                 <FieldDescription className="text-center">
                                     Não tem conta? <a href="/register">Cadastrar-se</a>
                                 </FieldDescription>
