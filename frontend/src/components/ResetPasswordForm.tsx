@@ -14,6 +14,12 @@ import {
 } from "@/schemas/auth/reset-password-schema";
 import { toFieldErrors } from "@/schemas/utils";
 
+type ResetPasswordPayload = {
+  email: string;
+  resetCode: string;
+  newPassword: string;
+};
+
 export default function ResetPasswordForm({ ...props }: React.ComponentProps<typeof Card>) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -28,14 +34,10 @@ export default function ResetPasswordForm({ ...props }: React.ComponentProps<typ
   const [isPasswordReset, setIsPasswordReset] = useState(false);
 
   const resetPasswordMutation = useMutation({
-    mutationFn: async (data: ResetPasswordRequest) => {
+    mutationFn: async (payload: ResetPasswordPayload) => {
       const response = await apiFetch("/auth/resetPassword", {
         method: "POST",
-        body: JSON.stringify({
-          email: data.email,
-          resetCode: token,
-          newPassword: data.password,
-        }),
+        body: JSON.stringify(payload),
       });
 
       await throwIfApiError(response, "Não foi possível redefinir a senha.");
@@ -62,7 +64,11 @@ export default function ResetPasswordForm({ ...props }: React.ComponentProps<typ
     }
 
     setRequestError(null);
-    resetPasswordMutation.mutate(result.data);
+    resetPasswordMutation.mutate({
+      email: result.data.email,
+      resetCode: token,
+      newPassword: result.data.password,
+    });
   };
 
   const isSubmitting = resetPasswordMutation.isPending;

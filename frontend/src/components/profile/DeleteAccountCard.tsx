@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch, throwIfApiError } from "@/lib/api";
+import { clearPrivateQueries, clearSettledMutations } from "@/lib/authCache";
 
 export default function DeleteAccountCard() {
-  const { refreshUser } = useAuth();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -31,8 +31,8 @@ export default function DeleteAccountCard() {
 
       await throwIfApiError(response, "Não foi possível excluir a conta.");
     },
-    onSuccess: async () => {
-      await refreshUser();
+    onSuccess: () => {
+      clearPrivateQueries(queryClient);
       navigate("/login", { replace: true });
     },
     onError: (error) => {
@@ -41,6 +41,7 @@ export default function DeleteAccountCard() {
   });
 
   function handleDeleteAccount() {
+    clearSettledMutations(queryClient);
     deleteAccountMutation.mutate();
   }
 

@@ -1,26 +1,18 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { createContext, useCallback, useContext, type ReactNode } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createContext, useContext, type ReactNode } from "react";
 
-import { apiFetch } from "@/lib/api";
-import { profileKeys } from "@/lib/queryKeys";
-import { queryClient } from "@/lib/queryClient";
-
-export type User = {
-  userName: string;
-  email: string;
-  avatarSeed: string;
-  profilePictureUrl: string | null;
-};
-
-type RefreshUserOptions = {
-  silent?: boolean;
-};
+import { useProfileQuery } from "@/hooks/useProfile";
+import { apiFetch, throwIfApiError } from "@/lib/api";
+import { clearPrivateQueries, clearSettledMutations } from "@/lib/authCache";
+import type { User } from "@/types/user";
 
 type AuthContextType = {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  refreshUser: (options?: RefreshUserOptions) => Promise<void>;
+  authError: Error | null;
+  isRetrying: boolean;
+  retryAuth: () => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -30,29 +22,9 @@ type AuthProviderProps = {
   children: ReactNode;
 };
 
-async function fetchProfile(): Promise<User | null> {
-  const response = await apiFetch("/profile/me");
-
-  if (response.status === 401 || response.status === 404) {
-    return null;
-  }
-
-  if (!response.ok) {
-    throw new Error("Não foi possível carregar o perfil.");
-  }
-
-  return response.json();
-}
-
 export function AuthProvider({ children }: AuthProviderProps) {
-  const profileQuery = useQuery({
-    queryKey: profileKeys.me,
-    queryFn: fetchProfile,
-  });
-
-  const refreshUser = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: profileKeys.me });
-  }, []);
+  const queryClient = useQueryClient();
+  const profileQuery = useProfileQuery();
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -60,17 +32,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
         method: "POST",
       });
 
-      if (!response.ok) {
-        throw new Error("Não foi possível encerrar a sessão.");
-      }
+      await throwIfApiError(response, "Não foi possível encerrar a sessão.");
     },
     onSuccess: () => {
-      queryClient.setQueryData(profileKeys.me, null);
+      clearPrivateQueries(queryClient);
     },
   });
 
   async function logout() {
+    clearSettledMutations(queryClient);
     await logoutMutation.mutateAsync();
+  }
+
+  async function retryAuth() {
+    await profileQuery.refetch();
   }
 
   const user = profileQuery.data ?? null;
@@ -79,9 +54,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: user != null,
-        isLoading: profileQuery.isPending,
-        refreshUser,
+        isAuthenticated: user !== null,
+        isLoading: profileQuery.status === "pending",
+        authError: profileQuery.error,
+        isRetrying: profileQuery.isError && profileQuery.isFetching,
+        retryAuth,
         logout,
       }}
     >

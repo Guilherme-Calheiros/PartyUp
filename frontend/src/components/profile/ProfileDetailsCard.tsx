@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Pencil, Shuffle } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
 
 import UserAvatar from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
@@ -8,18 +7,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { useAuth, type User } from "@/contexts/AuthContext";
-import { apiFetch, throwIfApiError } from "@/lib/api";
+import { useUpdateProfileMutation } from "@/hooks/useProfile";
 import { updateProfileSchema, type UpdateProfileRequest } from "@/schemas/profile/profile-schema";
 import { toFieldErrors } from "@/schemas/utils";
+import type { User } from "@/types/user";
 
 type ProfileDetailsCardProps = {
   user: User;
 };
 
 export default function ProfileDetailsCard({ user }: ProfileDetailsCardProps) {
-  const { refreshUser } = useAuth();
-
   const [isEditing, setIsEditing] = useState(false);
   const [userName, setUserName] = useState(user.userName);
   const [avatarSeed, setAvatarSeed] = useState(user.avatarSeed);
@@ -44,28 +41,7 @@ export default function ProfileDetailsCard({ user }: ProfileDetailsCardProps) {
     return () => window.clearTimeout(timeoutId);
   }, [successMessage]);
 
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data: UpdateProfileRequest) => {
-      const response = await apiFetch("/profile/me", {
-        method: "PATCH",
-        body: JSON.stringify({
-          userName: data.userName,
-          avatarSeed,
-          profilePictureUrl,
-        }),
-      });
-
-      await throwIfApiError(response, "Não foi possível salvar as alterações.");
-    },
-    onSuccess: async () => {
-      await refreshUser({ silent: true });
-      setIsEditing(false);
-      setSuccessMessage("Perfil atualizado com sucesso.");
-    },
-    onError: (error) => {
-      console.error("Erro ao atualizar perfil:", error);
-    },
-  });
+  const updateProfileMutation = useUpdateProfileMutation();
 
   function resetUserData() {
     setUserName(user.userName);
@@ -106,7 +82,22 @@ export default function ProfileDetailsCard({ user }: ProfileDetailsCardProps) {
       return;
     }
 
-    updateProfileMutation.mutate(result.data);
+    updateProfileMutation.mutate(
+      {
+        userName: result.data.userName,
+        avatarSeed,
+        profilePictureUrl,
+      },
+      {
+        onSuccess: () => {
+          setIsEditing(false);
+          setSuccessMessage("Perfil atualizado com sucesso.");
+        },
+        onError: (error) => {
+          console.error("Erro ao atualizar perfil:", error);
+        },
+      },
+    );
   }
 
   const isSaving = updateProfileMutation.isPending;

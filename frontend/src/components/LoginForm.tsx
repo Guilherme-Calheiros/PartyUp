@@ -7,18 +7,18 @@ import { Input } from "@/components/ui/input";
 import InputPassword from "./ui/inputPassword";
 import { useState } from "react";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, throwIfApiError } from "@/lib/api";
+import { profileKeys } from "@/lib/queryKeys";
 import { useNavigate, useLocation } from "react-router";
 import { loginSchema, type LoginRequest } from "@/schemas/auth/login-schema";
 import { toFieldErrors } from "@/schemas/utils";
-import { useAuth } from "@/contexts/AuthContext";
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof LoginRequest, string>>>({});
-  const { refreshUser } = useAuth();
+  const queryClient = useQueryClient();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,7 +40,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
       await throwIfApiError(response, "Não foi possível fazer login.");
     },
     onSuccess: async () => {
-      await refreshUser();
+      await queryClient.invalidateQueries({ queryKey: profileKeys.me });
       handleReset();
       navigate(from, { replace: true });
     },
