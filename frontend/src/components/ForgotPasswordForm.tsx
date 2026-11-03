@@ -4,7 +4,8 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { MailCheck } from "lucide-react";
-import { apiFetch, getApiErrorMessage } from "@/lib/api";
+import { useMutation } from "@tanstack/react-query";
+import { apiFetch, throwIfApiError } from "@/lib/api";
 import {
   forgotPasswordSchema,
   type ForgotPasswordRequest,
@@ -14,11 +15,26 @@ import { toFieldErrors } from "@/schemas/utils";
 export default function ForgotPasswordForm({ ...props }: React.ComponentProps<typeof Card>) {
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof ForgotPasswordRequest, string>>>({});
-  const [requestError, setRequestError] = useState<string | null>(null);
   const [isEmailSent, setIsEmailSent] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (forgotPasswordRequest: ForgotPasswordRequest) => {
+  const forgotPasswordMutation = useMutation({
+    mutationFn: async (data: ForgotPasswordRequest) => {
+      const response = await apiFetch("/auth/forgotPassword", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+
+      await throwIfApiError(response, "Não foi possível solicitar a redefinição de senha.");
+    },
+    onSuccess: () => {
+      setIsEmailSent(true);
+    },
+    onError: (error) => {
+      console.error("Erro ao solicitar redefinição de senha:", error);
+    },
+  });
+
+  const handleSubmit = (forgotPasswordRequest: ForgotPasswordRequest) => {
     const result = forgotPasswordSchema.safeParse(forgotPasswordRequest);
 
     if (!result.success) {
@@ -26,33 +42,11 @@ export default function ForgotPasswordForm({ ...props }: React.ComponentProps<ty
       return;
     }
 
-    setIsSubmitting(true);
-    setRequestError(null);
-
-    try {
-      const response = await apiFetch("/auth/forgotPassword", {
-        method: "POST",
-        body: JSON.stringify(result.data),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          await getApiErrorMessage(response, "Não foi possível solicitar a redefinição de senha."),
-        );
-      }
-
-      setIsEmailSent(true);
-    } catch (error) {
-      console.error("Erro ao solicitar redefinição de senha:", error);
-      setRequestError(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível solicitar a redefinição de senha. Tente novamente.",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+    forgotPasswordMutation.mutate(result.data);
   };
+
+  const isSubmitting = forgotPasswordMutation.isPending;
+  const requestError = forgotPasswordMutation.error?.message ?? null;
 
   if (isEmailSent) {
     return (

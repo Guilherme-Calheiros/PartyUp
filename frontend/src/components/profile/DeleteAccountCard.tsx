@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/button";
@@ -14,38 +15,37 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiFetch, getApiErrorMessage } from "@/lib/api";
+import { apiFetch, throwIfApiError } from "@/lib/api";
 
 export default function DeleteAccountCard() {
   const { refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  async function handleDeleteAccount() {
-    setIsDeleting(true);
-    setError(null);
-
-    try {
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
       const response = await apiFetch("/auth/deleteAccount", {
         method: "DELETE",
       });
 
-      if (!response.ok) {
-        throw new Error(await getApiErrorMessage(response, "Não foi possível excluir a conta."));
-      }
-
+      await throwIfApiError(response, "Não foi possível excluir a conta.");
+    },
+    onSuccess: async () => {
       await refreshUser();
       navigate("/login", { replace: true });
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error("Erro ao excluir conta:", error);
-      setError(error instanceof Error ? error.message : "Não foi possível excluir a conta.");
-    } finally {
-      setIsDeleting(false);
-    }
+    },
+  });
+
+  function handleDeleteAccount() {
+    deleteAccountMutation.mutate();
   }
+
+  const isDeleting = deleteAccountMutation.isPending;
+  const error = deleteAccountMutation.error?.message ?? null;
 
   return (
     <>
@@ -64,7 +64,7 @@ export default function DeleteAccountCard() {
           <Button
             variant="destructive"
             onClick={() => {
-              setError(null);
+              deleteAccountMutation.reset();
               setIsDialogOpen(true);
             }}
           >

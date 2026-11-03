@@ -1,5 +1,9 @@
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { createContext, useCallback, useContext, type ReactNode } from "react";
+
 import { apiFetch } from "@/lib/api";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { profileKeys } from "@/lib/queryKeys";
+import { queryClient } from "@/lib/queryClient";
 
 export type User = {
   userName: string;
@@ -26,57 +30,57 @@ type AuthProviderProps = {
   children: ReactNode;
 };
 
+async function fetchProfile(): Promise<User | null> {
+  const response = await apiFetch("/profile/me");
+
+  if (response.status === 401 || response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error("Não foi possível carregar o perfil.");
+  }
+
+  return response.json();
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const profileQuery = useQuery({
+    queryKey: profileKeys.me,
+    queryFn: fetchProfile,
+  });
 
-  async function refreshUser(options?: RefreshUserOptions) {
-    if (!options?.silent) {
-      setIsLoading(true);
-    }
+  const refreshUser = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: profileKeys.me });
+  }, []);
 
-    try {
-      const response = await apiFetch("/profile/me");
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiFetch("/auth/logout", {
+        method: "POST",
+      });
 
       if (!response.ok) {
-        setUser(null);
-        return;
+        throw new Error("Não foi possível encerrar a sessão.");
       }
-
-      const data: User = await response.json();
-      setUser(data);
-    } catch (error) {
-      console.error(error);
-      setUser(null);
-    } finally {
-      if (!options?.silent) {
-        setIsLoading(false);
-      }
-    }
-  }
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(profileKeys.me, null);
+    },
+  });
 
   async function logout() {
-    const response = await apiFetch("/auth/logout", {
-      method: "POST",
-    });
-
-    if (!response.ok) {
-      throw new Error("Não foi possível encerrar a sessão.");
-    }
-
-    setUser(null);
+    await logoutMutation.mutateAsync();
   }
 
-  useEffect(() => {
-    refreshUser();
-  }, []);
+  const user = profileQuery.data ?? null;
 
   return (
     <AuthContext.Provider
       value={{
         user,
         isAuthenticated: user != null,
-        isLoading,
+        isLoading: profileQuery.isPending,
         refreshUser,
         logout,
       }}

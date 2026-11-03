@@ -4,7 +4,8 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input";
 import InputPassword from "./ui/inputPassword";
 import { useState } from "react";
-import { apiFetch, getApiErrorMessage } from "@/lib/api";
+import { useMutation } from "@tanstack/react-query";
+import { apiFetch, throwIfApiError } from "@/lib/api";
 import { useNavigate } from "react-router";
 import { registerSchema, type RegisterRequest } from "@/schemas/auth/register-schema";
 import { toFieldErrors } from "@/schemas/utils";
@@ -15,8 +16,6 @@ export default function RegisterForm({ ...props }: React.ComponentProps<typeof C
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof RegisterRequest, string>>>({});
-  const [requestError, setRequestError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
 
@@ -27,7 +26,25 @@ export default function RegisterForm({ ...props }: React.ComponentProps<typeof C
     setConfirmPassword("");
   };
 
-  const handleSubmit = async (registerRequest: RegisterRequest) => {
+  const registerMutation = useMutation({
+    mutationFn: async (data: RegisterRequest) => {
+      const response = await apiFetch("/auth/register", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+
+      await throwIfApiError(response, "Não foi possível criar uma conta.");
+    },
+    onSuccess: () => {
+      handleReset();
+      navigate("/login");
+    },
+    onError: (error) => {
+      console.error("Erro ao criar conta:", error);
+    },
+  });
+
+  const handleSubmit = (registerRequest: RegisterRequest) => {
     const result = registerSchema.safeParse(registerRequest);
 
     if (!result.success) {
@@ -35,28 +52,11 @@ export default function RegisterForm({ ...props }: React.ComponentProps<typeof C
       return;
     }
 
-    setRequestError(null);
-    setIsSubmitting(true);
-
-    try {
-      const response = await apiFetch("/auth/register", {
-        method: "POST",
-        body: JSON.stringify(result.data),
-      });
-
-      if (!response.ok) {
-        throw new Error(await getApiErrorMessage(response, "Não foi possível criar uma conta."));
-      }
-
-      handleReset();
-      navigate("/login");
-    } catch (error) {
-      console.error("Erro ao criar conta:", error);
-      setRequestError(error instanceof Error ? error.message : "Não foi possível criar uma conta.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    registerMutation.mutate(result.data);
   };
+
+  const isSubmitting = registerMutation.isPending;
+  const requestError = registerMutation.error?.message ?? null;
 
   return (
     <Card {...props}>

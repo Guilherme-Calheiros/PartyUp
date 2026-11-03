@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
 import InputPassword from "@/components/ui/inputPassword";
-import { apiFetch, getApiErrorMessage } from "@/lib/api";
+import { apiFetch, throwIfApiError } from "@/lib/api";
 import { changePasswordSchema, type ChangePasswordRequest } from "@/schemas/profile/profile-schema";
 import { toFieldErrors } from "@/schemas/utils";
 
@@ -13,9 +14,35 @@ export default function ChangePasswordForm() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof ChangePasswordRequest, string>>>({});
-  const [requestError, setRequestError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const resetForm = () => {
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setErrors({});
+  };
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: ChangePasswordRequest) => {
+      const response = await apiFetch("/auth/changePassword", {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+        }),
+      });
+
+      await throwIfApiError(response, "Não foi possível alterar a senha.");
+    },
+    onSuccess: () => {
+      resetForm();
+      setSuccessMessage("Senha alterada com sucesso.");
+    },
+    onError: (error) => {
+      console.error("Erro ao alterar senha:", error);
+    },
+  });
 
   useEffect(() => {
     if (!successMessage) {
@@ -29,7 +56,7 @@ export default function ChangePasswordForm() {
     return () => window.clearTimeout(timeoutId);
   }, [successMessage]);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const result = changePasswordSchema.safeParse({
@@ -43,35 +70,12 @@ export default function ChangePasswordForm() {
       return;
     }
 
-    setIsSubmitting(true);
-    setRequestError(null);
     setSuccessMessage(null);
-
-    try {
-      const response = await apiFetch("/auth/changePassword", {
-        method: "POST",
-        body: JSON.stringify({
-          currentPassword: result.data.currentPassword,
-          newPassword: result.data.newPassword,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(await getApiErrorMessage(response, "Não foi possível alterar a senha."));
-      }
-
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setErrors({});
-      setSuccessMessage("Senha alterada com sucesso.");
-    } catch (error) {
-      console.error("Erro ao alterar senha:", error);
-      setRequestError(error instanceof Error ? error.message : "Não foi possível alterar a senha.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    changePasswordMutation.mutate(result.data);
   }
+
+  const isSubmitting = changePasswordMutation.isPending;
+  const requestError = changePasswordMutation.error?.message ?? null;
 
   return (
     <form onSubmit={handleSubmit}>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Pencil, Shuffle } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
 
 import UserAvatar from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, type User } from "@/contexts/AuthContext";
-import { apiFetch, getApiErrorMessage } from "@/lib/api";
+import { apiFetch, throwIfApiError } from "@/lib/api";
 import { updateProfileSchema, type UpdateProfileRequest } from "@/schemas/profile/profile-schema";
 import { toFieldErrors } from "@/schemas/utils";
 
@@ -24,9 +25,7 @@ export default function ProfileDetailsCard({ user }: ProfileDetailsCardProps) {
   const [avatarSeed, setAvatarSeed] = useState(user.avatarSeed);
   const [profilePictureUrl, setProfilePictureUrl] = useState(user.profilePictureUrl);
   const [errors, setErrors] = useState<Partial<Record<keyof UpdateProfileRequest, string>>>({});
-  const [requestError, setRequestError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
 
   const hasChanges =
     userName.trim() !== user.userName ||
@@ -45,6 +44,29 @@ export default function ProfileDetailsCard({ user }: ProfileDetailsCardProps) {
     return () => window.clearTimeout(timeoutId);
   }, [successMessage]);
 
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: UpdateProfileRequest) => {
+      const response = await apiFetch("/profile/me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          userName: data.userName,
+          avatarSeed,
+          profilePictureUrl,
+        }),
+      });
+
+      await throwIfApiError(response, "Não foi possível salvar as alterações.");
+    },
+    onSuccess: async () => {
+      await refreshUser({ silent: true });
+      setIsEditing(false);
+      setSuccessMessage("Perfil atualizado com sucesso.");
+    },
+    onError: (error) => {
+      console.error("Erro ao atualizar perfil:", error);
+    },
+  });
+
   function resetUserData() {
     setUserName(user.userName);
     setAvatarSeed(user.avatarSeed);
@@ -54,7 +76,7 @@ export default function ProfileDetailsCard({ user }: ProfileDetailsCardProps) {
   function startEditing() {
     resetUserData();
     setErrors({});
-    setRequestError(null);
+    updateProfileMutation.reset();
     setSuccessMessage(null);
     setIsEditing(true);
   }
@@ -62,7 +84,7 @@ export default function ProfileDetailsCard({ user }: ProfileDetailsCardProps) {
   function cancelEditing() {
     resetUserData();
     setErrors({});
-    setRequestError(null);
+    updateProfileMutation.reset();
     setIsEditing(false);
   }
 
@@ -70,7 +92,7 @@ export default function ProfileDetailsCard({ user }: ProfileDetailsCardProps) {
     setAvatarSeed(crypto.randomUUID());
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const result = updateProfileSchema.safeParse({ userName });
@@ -84,37 +106,11 @@ export default function ProfileDetailsCard({ user }: ProfileDetailsCardProps) {
       return;
     }
 
-    setIsSaving(true);
-    setRequestError(null);
-
-    try {
-      const response = await apiFetch("/profile/me", {
-        method: "PATCH",
-        body: JSON.stringify({
-          userName: result.data.userName,
-          avatarSeed,
-          profilePictureUrl,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          await getApiErrorMessage(response, "Não foi possível salvar as alterações."),
-        );
-      }
-
-      await refreshUser({ silent: true });
-      setIsEditing(false);
-      setSuccessMessage("Perfil atualizado com sucesso.");
-    } catch (error) {
-      console.error("Erro ao atualizar perfil:", error);
-      setRequestError(
-        error instanceof Error ? error.message : "Não foi possível salvar as alterações.",
-      );
-    } finally {
-      setIsSaving(false);
-    }
+    updateProfileMutation.mutate(result.data);
   }
+
+  const isSaving = updateProfileMutation.isPending;
+  const requestError = updateProfileMutation.error?.message ?? null;
 
   return (
     <Card className="py-6">

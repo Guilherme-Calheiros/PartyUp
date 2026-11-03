@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import InputPassword from "./ui/inputPassword";
 import { useState } from "react";
 
-import { apiFetch, getApiErrorMessage } from "@/lib/api";
+import { useMutation } from "@tanstack/react-query";
+import { apiFetch, throwIfApiError } from "@/lib/api";
 import { useNavigate, useLocation } from "react-router";
 import { loginSchema, type LoginRequest } from "@/schemas/auth/login-schema";
 import { toFieldErrors } from "@/schemas/utils";
@@ -17,8 +18,6 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof LoginRequest, string>>>({});
-  const [requestError, setRequestError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { refreshUser } = useAuth();
 
   const navigate = useNavigate();
@@ -31,7 +30,26 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     setPassword("");
   };
 
-  const handleSubmit = async (loginRequest: LoginRequest) => {
+  const loginMutation = useMutation({
+    mutationFn: async (data: LoginRequest) => {
+      const response = await apiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+
+      await throwIfApiError(response, "Não foi possível fazer login.");
+    },
+    onSuccess: async () => {
+      await refreshUser();
+      handleReset();
+      navigate(from, { replace: true });
+    },
+    onError: (error) => {
+      console.error("Erro ao fazer login:", error);
+    },
+  });
+
+  const handleSubmit = (loginRequest: LoginRequest) => {
     const result = loginSchema.safeParse(loginRequest);
 
     if (!result.success) {
@@ -39,29 +57,11 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
       return;
     }
 
-    setRequestError(null);
-    setIsSubmitting(true);
-
-    try {
-      const response = await apiFetch("/auth/login", {
-        method: "POST",
-        body: JSON.stringify(result.data),
-      });
-
-      if (!response.ok) {
-        throw new Error(await getApiErrorMessage(response, "Não foi possível fazer login."));
-      }
-
-      await refreshUser();
-      handleReset();
-      navigate(from, { replace: true });
-    } catch (error) {
-      console.error("Erro ao fazer login:", error);
-      setRequestError(error instanceof Error ? error.message : "Não foi possível fazer login.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    loginMutation.mutate(result.data);
   };
+
+  const isSubmitting = loginMutation.isPending;
+  const requestError = loginMutation.error?.message ?? null;
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>

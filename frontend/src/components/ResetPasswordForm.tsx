@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import InputPassword from "./ui/inputPassword";
 import { useState } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { apiFetch, getApiErrorMessage } from "@/lib/api";
+import { useMutation } from "@tanstack/react-query";
+import { apiFetch, throwIfApiError } from "@/lib/api";
 import { useNavigate, useSearchParams } from "react-router";
 import {
   resetPasswordSchema,
@@ -25,9 +26,29 @@ export default function ResetPasswordForm({ ...props }: React.ComponentProps<typ
   const [errors, setErrors] = useState<Partial<Record<keyof ResetPasswordRequest, string>>>({});
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isPasswordReset, setIsPasswordReset] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (resetPasswordRequest: ResetPasswordRequest) => {
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (data: ResetPasswordRequest) => {
+      const response = await apiFetch("/auth/resetPassword", {
+        method: "POST",
+        body: JSON.stringify({
+          email: data.email,
+          resetCode: token,
+          newPassword: data.password,
+        }),
+      });
+
+      await throwIfApiError(response, "Não foi possível redefinir a senha.");
+    },
+    onSuccess: () => {
+      setIsPasswordReset(true);
+    },
+    onError: (error) => {
+      console.error("Erro ao redefinir senha:", error);
+    },
+  });
+
+  const handleSubmit = (resetPasswordRequest: ResetPasswordRequest) => {
     const result = resetPasswordSchema.safeParse(resetPasswordRequest);
 
     if (!result.success) {
@@ -40,35 +61,12 @@ export default function ResetPasswordForm({ ...props }: React.ComponentProps<typ
       return;
     }
 
-    setIsSubmitting(true);
     setRequestError(null);
-
-    try {
-      const response = await apiFetch("/auth/resetPassword", {
-        method: "POST",
-        body: JSON.stringify({
-          email: result.data.email,
-          resetCode: token,
-          newPassword: result.data.password,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(await getApiErrorMessage(response, "Não foi possível redefinir a senha."));
-      }
-
-      setIsPasswordReset(true);
-    } catch (error) {
-      console.error("Erro ao redefinir senha:", error);
-      setRequestError(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível redefinir a senha. Verifique se o link é válido ou solicite um novo.",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+    resetPasswordMutation.mutate(result.data);
   };
+
+  const isSubmitting = resetPasswordMutation.isPending;
+  const mutationError = resetPasswordMutation.error?.message ?? null;
 
   if (isPasswordReset) {
     return (
@@ -142,9 +140,9 @@ export default function ResetPasswordForm({ ...props }: React.ComponentProps<typ
               />
               {errors.confirmPassword && <FieldError>{errors.confirmPassword}</FieldError>}
             </Field>
-            {requestError && (
+            {(requestError || mutationError) && (
               <Field data-invalid>
-                <FieldError>{requestError}</FieldError>
+                <FieldError>{requestError ?? mutationError}</FieldError>
               </Field>
             )}
             <Field>

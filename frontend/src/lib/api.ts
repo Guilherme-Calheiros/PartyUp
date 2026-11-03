@@ -11,6 +11,14 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   });
 }
 
+export async function throwIfApiError(response: Response, fallback: string) {
+  if (response.ok) {
+    return;
+  }
+
+  throw new Error(await getApiErrorMessage(response, fallback));
+}
+
 export async function getApiErrorMessage(response: Response, fallback: string) {
   const text = await response.text();
 
