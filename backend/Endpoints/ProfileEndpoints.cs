@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using PartyUp.Contracts.User;
 
 namespace PartyUp.Endpoints;
@@ -9,23 +8,18 @@ public static class ProfileEndpoints
 {
     public static WebApplication MapProfileEndpoints(this WebApplication app)
     {
-        var profile = app.MapGroup("/profile").WithTags("Profile");
+        var profileGroup = app.MapGroup("/profile").WithTags("Profile");
 
-        profile.MapGet("me", async (
+        profileGroup.MapGet("me", async (
             ClaimsPrincipal user,
             PartyUpContext context) =>
         {
-            var identityId = user.FindFirstValue(
-                ClaimTypes.NameIdentifier
-            );
+            var (profile, isAuthenticated) = await user.GetProfileAsync(context);
 
-            if (identityId is null)
+            if (!isAuthenticated)
             {
                 return Results.Unauthorized();
             }
-
-            var profile = await context.UsersProfile
-                .FirstOrDefaultAsync(p => p.IdentityId == identityId);
 
             if (profile is null)
             {
@@ -34,6 +28,7 @@ public static class ProfileEndpoints
 
             return Results.Ok(new
             {
+                profile.Id,
                 profile.UserName,
                 profile.Email,
                 profile.AvatarSeed,
@@ -41,46 +36,47 @@ public static class ProfileEndpoints
             });
         }).RequireAuthorization();
 
-        profile.MapPatch("me", async (
+        profileGroup.MapPatch("me", async (
             UpdateUserRequest request,
             ClaimsPrincipal user,
             PartyUpContext context) =>
         {
-            var identityId = user.FindFirstValue(
-                ClaimTypes.NameIdentifier
-            );
+            var (profile, isAuthenticated) = await user.GetProfileAsync(context);
 
-            if (identityId is null)
+            if (!isAuthenticated)
             {
                 return Results.Unauthorized();
             }
-
-            var profile = await context.UsersProfile
-                .FirstOrDefaultAsync(p => p.IdentityId == identityId);
 
             if (profile is null)
             {
                 return Results.NotFound();
             }
 
+            var errors = new Dictionary<string, string[]>();
+
             if (request.UserName is not null)
             {
                 if (string.IsNullOrWhiteSpace(request.UserName))
                 {
-                    return Results.BadRequest("Username não pode ser vazio.");
+                    errors["UserName"] = ["Username não pode ser vazio."];
                 }
-
-                profile.UserName = request.UserName.Trim();
+                else
+                {
+                    profile.UserName = request.UserName.Trim();
+                }
             }
 
             if (request.AvatarSeed is not null)
             {
                 if (string.IsNullOrWhiteSpace(request.AvatarSeed))
                 {
-                    return Results.BadRequest("Avatar de usuário inválido.");
+                    errors["AvatarSeed"] = ["Avatar de usuário inválido."];
                 }
-
-                profile.AvatarSeed = request.AvatarSeed.Trim();
+                else
+                {
+                    profile.AvatarSeed = request.AvatarSeed.Trim();
+                }
             }
 
             if (request.ProfilePictureUrl.HasValue)
@@ -95,30 +91,36 @@ public static class ProfileEndpoints
                 {
                     var url = picture.GetString();
 
-                    if (string.IsNullOrWhiteSpace(url))
-                        return Results.BadRequest("URL da foto inválida.");
-
-                    if (!Uri.TryCreate(url, UriKind.Absolute, out var parsedUrl)
-                        || (parsedUrl.Scheme != Uri.UriSchemeHttps
-                            && parsedUrl.Scheme != Uri.UriSchemeHttp))
+                    if (!UrlValidation.TryNormalizeHttpUrl(
+                        url,
+                        out var normalizedUrl
+                    ))
                     {
-                        return Results.BadRequest("URL da foto inválida.");
+                        errors["ProfilePictureUrl"] = ["URL da foto inválida."];
                     }
+                    else
+                    {
+                        // TODO: fazer o save da url no S2 da cloudflare
 
-                    // TODO: fazer o save da url no S2 da cloudflare
-
-                    profile.ProfilePictureUrl = url;
+                        profile.ProfilePictureUrl = normalizedUrl;
+                    }
                 }
                 else
                 {
-                    return Results.BadRequest("URL da foto inválida.");
+                    errors["ProfilePictureUrl"] = ["URL da foto inválida."];
                 }
+            }
+
+            if (errors.Count > 0)
+            {
+                return Results.ValidationProblem(errors);
             }
 
             await context.SaveChangesAsync();
 
             return Results.Ok(new
             {
+                profile.Id,
                 profile.UserName,
                 profile.Email,
                 profile.AvatarSeed,

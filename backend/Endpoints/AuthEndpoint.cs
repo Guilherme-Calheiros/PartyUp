@@ -266,21 +266,38 @@ public static class AuthEndpoints
                 return Results.NotFound();
             }
 
-            if (string.IsNullOrWhiteSpace(request.CurrentPassword) ||
-                string.IsNullOrWhiteSpace(request.NewPassword))
+            var passwordErrors = new Dictionary<string, string[]>();
+
+            if (string.IsNullOrWhiteSpace(request.CurrentPassword))
             {
-                return Results.BadRequest("As senhas não podem estar vazias");
+                passwordErrors["CurrentPassword"] = ["A senha atual não pode estar vazia."];
             }
 
-            if (request.CurrentPassword == request.NewPassword)
+            if (string.IsNullOrWhiteSpace(request.NewPassword))
             {
-                return Results.BadRequest("A nova senha não pode ser igual à senha atual");
+                passwordErrors["NewPassword"] = ["A nova senha não pode estar vazia."];
+            }
+
+            if (passwordErrors.Count > 0)
+            {
+                return Results.ValidationProblem(passwordErrors);
+            }
+
+            var currentPassword = request.CurrentPassword!;
+            var newPassword = request.NewPassword!;
+
+            if (currentPassword == newPassword)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["NewPassword"] = ["A nova senha não pode ser igual à senha atual."]
+                });
             }
 
             var result = await userManager.ChangePasswordAsync(
                 user,
-                request.CurrentPassword,
-                request.NewPassword);
+                currentPassword,
+                newPassword);
 
             if (!result.Succeeded)
             {
