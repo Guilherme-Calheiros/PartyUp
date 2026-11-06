@@ -14,6 +14,7 @@ public class PartyUpContext : IdentityDbContext<IdentityUser>
     public DbSet<UserModel> UsersProfile { get; set; } = null!;
     public DbSet<GroupModel> Groups { get; set; } = null!;
     public DbSet<GroupMember> GroupMembers { get; set; } = null!;
+    public DbSet<GroupInvite> GroupInvites { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -64,6 +65,16 @@ public class PartyUpContext : IdentityDbContext<IdentityUser>
             entity.HasOne(member => member.Group)
                 .WithMany(group => group.Members)
                 .HasForeignKey(member => member.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<GroupInvite>(entity =>
+        {
+            entity.HasKey(invite => invite.Id);
+
+            entity.HasOne(invite => invite.Group)
+                .WithOne(group => group.Invite)
+                .HasForeignKey<GroupInvite>(invite => invite.GroupId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

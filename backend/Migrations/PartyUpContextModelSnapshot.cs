@@ -218,6 +218,30 @@ namespace backend.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("PartyUp.Models.GroupInvite", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GroupId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId")
+                        .IsUnique();
+
+                    b.ToTable("GroupInvites");
+                });
+
             modelBuilder.Entity("PartyUp.Models.GroupMember", b =>
                 {
                     b.Property<string>("UserId")
@@ -359,6 +383,17 @@ namespace backend.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("PartyUp.Models.GroupInvite", b =>
+                {
+                    b.HasOne("PartyUp.Models.GroupModel", "Group")
+                        .WithOne("Invite")
+                        .HasForeignKey("PartyUp.Models.GroupInvite", "GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+                });
+
             modelBuilder.Entity("PartyUp.Models.GroupMember", b =>
                 {
                     b.HasOne("PartyUp.Models.GroupModel", "Group")
@@ -402,6 +437,8 @@ namespace backend.Migrations
 
             modelBuilder.Entity("PartyUp.Models.GroupModel", b =>
                 {
+                    b.Navigation("Invite");
+
                     b.Navigation("Members");
                 });
 

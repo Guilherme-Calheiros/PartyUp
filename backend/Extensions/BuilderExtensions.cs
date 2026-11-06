@@ -1,3 +1,5 @@
+using PartyUp.Services;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Resend;
@@ -45,6 +47,8 @@ public static class BuilderExtensions
         {
             opt.ApiToken = builder.Configuration["Resend:ApiKey"] ?? throw new InvalidOperationException("A chave da API do Resend não foi configurada.");
         });
+
+        builder.Services.AddScoped<InviteTokenService>();
 
         return builder;
     }
