@@ -6,6 +6,8 @@ public class GroupModel
     public string OwnerId { get; set; } = null!;
     public UserModel Owner { get; set; } = null!;
     public string Name { get; set; } = null!;
+    public string IconKey { get; set; } = "gamepad-2";
+    public string ColorKey { get; set; } = "indigo";
     public string? GroupPictureUrl { get; set; }
     public GroupVisibility Visibility { get; set; } = GroupVisibility.Private;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

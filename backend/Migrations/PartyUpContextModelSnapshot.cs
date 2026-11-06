@@ -244,6 +244,10 @@ namespace backend.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
+                    b.Property<string>("ColorKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -251,6 +255,10 @@ namespace backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("GroupPictureUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IconKey")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
