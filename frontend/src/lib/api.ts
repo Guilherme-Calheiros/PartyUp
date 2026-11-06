@@ -1,5 +1,15 @@
 export const API_URL = import.meta.env.VITE_API_URL;
 
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 export async function apiFetch(path: string, options: RequestInit = {}) {
   return fetch(`${API_URL}${path}`, {
     ...options,
@@ -16,7 +26,7 @@ export async function throwIfApiError(response: Response, fallback: string) {
     return;
   }
 
-  throw new Error(await getApiErrorMessage(response, fallback));
+  throw new ApiError(await getApiErrorMessage(response, fallback), response.status);
 }
 
 export async function getApiErrorMessage(response: Response, fallback: string) {
