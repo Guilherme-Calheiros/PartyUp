@@ -16,6 +16,13 @@ public static class BuilderExtensions
 
         builder.Services.AddOpenApi();
 
+        builder.Services.ConfigureHttpJsonOptions(opt =>
+        {
+            opt.SerializerOptions.Converters.Add(
+                new JsonStringEnumConverter(allowIntegerValues: false)
+            );
+        });
+
         builder.Services.AddDbContext<PartyUpContext>(opt =>
             opt.UseNpgsql(connectionString));
 
