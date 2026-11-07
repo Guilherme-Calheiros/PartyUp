@@ -20,6 +20,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ErrorState from "@/components/common/ErrorState";
 import GroupAvatar from "@/components/GroupAvatar";
 import GroupAboutTab from "@/components/group/GroupAboutTab";
+import GroupForm from "@/components/group/GroupForm";
 import GroupGamesTab from "@/components/group/GroupGamesTab";
 import GroupMembersTab from "@/components/group/GroupMembersTab";
 import GroupOverviewTab from "@/components/group/GroupOverviewTab";
@@ -46,8 +47,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { ApiError, apiFetch, getApiErrorMessage, throwIfApiError } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { groupKeys } from "@/lib/queryKeys";
 import type { GroupDetail } from "@/types/group";
+import { useUpdateGroupMutation } from "@/hooks/useGroups";
 
 const GROUP_SECTIONS = [
   { value: "overview", label: "Visão Geral", icon: LayoutDashboard },
@@ -104,6 +107,9 @@ export default function GroupPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [hasCopiedInvite, setHasCopiedInvite] = useState(false);
+  const [isEditingGroup, setIsEditingGroup] = useState(false);
+  const [previewIconKey, setPreviewIconKey] = useState("");
+  const [previewColorKey, setPreviewColorKey] = useState("");
 
   const {
     data: group,
@@ -191,6 +197,8 @@ export default function GroupPage() {
     },
   });
 
+  const updateGroupMutation = useUpdateGroupMutation(groupId ?? "");
+
   if (!groupId) {
     return null;
   }
@@ -250,7 +258,19 @@ export default function GroupPage() {
   }
 
   function handleEdit() {
-    console.log("Editar grupo", groupId);
+    if (!group) {
+      return;
+    }
+
+    updateGroupMutation.reset();
+    setPreviewIconKey(group.iconKey);
+    setPreviewColorKey(group.colorKey);
+    setIsEditingGroup(true);
+  }
+
+  function handleCancelEdit() {
+    updateGroupMutation.reset();
+    setIsEditingGroup(false);
   }
 
   function handleDelete() {
@@ -263,7 +283,12 @@ export default function GroupPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div
+      className={cn(
+        "mx-auto flex w-full flex-col gap-6",
+        isEditingGroup ? "max-w-3xl" : "max-w-5xl",
+      )}
+    >
       <Button variant="ghost" size="sm" className="self-start" render={<Link to="/grupos" />}>
         <ArrowLeft aria-hidden="true" />
         Voltar para meus grupos
@@ -283,124 +308,166 @@ export default function GroupPage() {
           </Button>
         </ErrorState>
       ) : group ? (
-        <Tabs value={activeSection} onValueChange={handleSectionChange}>
-          <Card className="gap-0 overflow-hidden py-0">
-            <div className="flex flex-col items-center gap-4 px-5 py-6 text-center sm:flex-row sm:items-center sm:gap-6 sm:px-6 sm:py-7 sm:text-left">
+        isEditingGroup ? (
+          <>
+            <div className="flex items-center gap-4">
               <GroupAvatar
-                iconKey={group.iconKey}
-                colorKey={group.colorKey}
-                imageUrl={group.groupPictureUrl}
-                size={64}
-                className="sm:hidden"
+                iconKey={previewIconKey}
+                colorKey={previewColorKey}
+                size={56}
+                alt="Prévia do grupo"
               />
-              <GroupAvatar
-                iconKey={group.iconKey}
-                colorKey={group.colorKey}
-                imageUrl={group.groupPictureUrl}
-                size={96}
-                className="hidden sm:flex"
-              />
-
-              <div className="min-w-0 flex-1">
-                <h1 className="font-heading text-2xl font-bold tracking-tight break-words sm:text-4xl">
-                  {group.name}
-                </h1>
-
-                <p className="mt-2 inline-flex items-center justify-center gap-1.5 text-sm text-muted-foreground sm:justify-start">
-                  <Users className="size-4" aria-hidden="true" />
-                  {group.memberCount} {group.memberCount === 1 ? "membro" : "membros"}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-center gap-2 sm:ml-auto">
-                <Button onClick={handleInvite}>
-                  <UserPlus aria-hidden="true" />
-                  Convidar
-                </Button>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={<Button variant="outline" size="icon" aria-label="Ações do grupo" />}
-                  >
-                    <MoreVertical aria-hidden="true" />
-                  </DropdownMenuTrigger>
-
-                  <DropdownMenuContent align="end" sideOffset={8} className="w-48">
-                    {canEdit && (
-                      <DropdownMenuItem onClick={handleEdit}>
-                        <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
-                        Editar grupo
-                      </DropdownMenuItem>
-                    )}
-
-                    {canDelete && (
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
-                        {isDeleting ? "Excluindo..." : "Excluir grupo"}
-                      </DropdownMenuItem>
-                    )}
-
-                    {(canEdit || canDelete) && <DropdownMenuSeparator />}
-
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onClick={handleLeave}
-                      disabled={isLeaving}
-                    >
-                      <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
-                      {isLeaving ? "Saindo..." : "Sair do grupo"}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <h1 className="font-heading text-2xl font-semibold tracking-tight">Editar grupo</h1>
             </div>
 
-            <TabsList className="border-t border-border px-1 sm:px-4">
-              {GROUP_SECTIONS.map((section) => {
-                const Icon = section.icon;
+            <Card className="px-6 py-6">
+              <GroupForm
+                initialValues={{
+                  name: group.name,
+                  description: group.description ?? "",
+                  iconKey: group.iconKey,
+                  colorKey: group.colorKey,
+                }}
+                submitLabel="Salvar alterações"
+                pendingLabel="Salvando..."
+                isSaving={updateGroupMutation.isPending}
+                requestError={updateGroupMutation.error?.message ?? null}
+                onSubmit={(values) =>
+                  updateGroupMutation.mutate(values, {
+                    onSuccess: () => setIsEditingGroup(false),
+                    onError: (error) => {
+                      console.error("Erro ao atualizar grupo:", error);
+                    },
+                  })
+                }
+                onCancel={handleCancelEdit}
+                onAppearanceChange={(iconKey, colorKey) => {
+                  setPreviewIconKey(iconKey);
+                  setPreviewColorKey(colorKey);
+                }}
+              />
+            </Card>
+          </>
+        ) : (
+          <Tabs value={activeSection} onValueChange={handleSectionChange}>
+            <Card className="gap-0 overflow-hidden py-0">
+              <div className="flex flex-col items-center gap-4 px-5 py-6 text-center sm:flex-row sm:items-center sm:gap-6 sm:px-6 sm:py-7 sm:text-left">
+                <GroupAvatar
+                  iconKey={group.iconKey}
+                  colorKey={group.colorKey}
+                  imageUrl={group.groupPictureUrl}
+                  size={64}
+                  className="sm:hidden"
+                />
+                <GroupAvatar
+                  iconKey={group.iconKey}
+                  colorKey={group.colorKey}
+                  imageUrl={group.groupPictureUrl}
+                  size={96}
+                  className="hidden sm:flex"
+                />
 
-                return (
-                  <TabsTab
-                    key={section.value}
-                    value={section.value}
-                    aria-label={section.label}
-                    className="flex-1 px-2 sm:flex-none sm:px-4"
-                  >
-                    <Icon className="size-4" aria-hidden="true" />
-                    <span className="hidden sm:inline">{section.label}</span>
-                  </TabsTab>
-                );
-              })}
-            </TabsList>
-          </Card>
+                <div className="min-w-0 flex-1">
+                  <h1 className="font-heading text-2xl font-bold tracking-tight break-words sm:text-4xl">
+                    {group.name}
+                  </h1>
 
-          <TabsPanel value="overview">
-            <GroupOverviewTab
-              group={group}
-              onViewAllMembers={() => handleSectionChange("members")}
-            />
-          </TabsPanel>
+                  <p className="mt-2 inline-flex items-center justify-center gap-1.5 text-sm text-muted-foreground sm:justify-start">
+                    <Users className="size-4" aria-hidden="true" />
+                    {group.memberCount} {group.memberCount === 1 ? "membro" : "membros"}
+                  </p>
+                </div>
 
-          <TabsPanel value="games">
-            <GroupGamesTab />
-          </TabsPanel>
+                <div className="flex items-center justify-center gap-2 sm:ml-auto">
+                  <Button onClick={handleInvite}>
+                    <UserPlus aria-hidden="true" />
+                    Convidar
+                  </Button>
 
-          <TabsPanel value="schedule">
-            <GroupScheduleTab />
-          </TabsPanel>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={<Button variant="outline" size="icon" aria-label="Ações do grupo" />}
+                    >
+                      <MoreVertical aria-hidden="true" />
+                    </DropdownMenuTrigger>
 
-          <TabsPanel value="members">
-            <GroupMembersTab groupId={group.id} viewerRole={group.userRole} />
-          </TabsPanel>
+                    <DropdownMenuContent align="end" sideOffset={8} className="w-48">
+                      {canEdit && (
+                        <DropdownMenuItem onClick={handleEdit}>
+                          <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
+                          Editar grupo
+                        </DropdownMenuItem>
+                      )}
 
-          <TabsPanel value="about">
-            <GroupAboutTab group={group} />
-          </TabsPanel>
-        </Tabs>
+                      {canDelete && (
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={handleDelete}
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                          {isDeleting ? "Excluindo..." : "Excluir grupo"}
+                        </DropdownMenuItem>
+                      )}
+
+                      {(canEdit || canDelete) && <DropdownMenuSeparator />}
+
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={handleLeave}
+                        disabled={isLeaving}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
+                        {isLeaving ? "Saindo..." : "Sair do grupo"}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              <TabsList className="border-t border-border px-1 sm:px-4">
+                {GROUP_SECTIONS.map((section) => {
+                  const Icon = section.icon;
+
+                  return (
+                    <TabsTab
+                      key={section.value}
+                      value={section.value}
+                      aria-label={section.label}
+                      className="flex-1 px-2 sm:flex-none sm:px-4"
+                    >
+                      <Icon className="size-4" aria-hidden="true" />
+                      <span className="hidden sm:inline">{section.label}</span>
+                    </TabsTab>
+                  );
+                })}
+              </TabsList>
+            </Card>
+
+            <TabsPanel value="overview">
+              <GroupOverviewTab
+                group={group}
+                onViewAllMembers={() => handleSectionChange("members")}
+              />
+            </TabsPanel>
+
+            <TabsPanel value="games">
+              <GroupGamesTab />
+            </TabsPanel>
+
+            <TabsPanel value="schedule">
+              <GroupScheduleTab />
+            </TabsPanel>
+
+            <TabsPanel value="members">
+              <GroupMembersTab groupId={group.id} viewerRole={group.userRole} />
+            </TabsPanel>
+
+            <TabsPanel value="about">
+              <GroupAboutTab group={group} />
+            </TabsPanel>
+          </Tabs>
+        )
       ) : null}
 
       <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>

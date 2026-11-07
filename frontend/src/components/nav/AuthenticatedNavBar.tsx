@@ -141,7 +141,7 @@ export default function AuthenticatedNavbar() {
 
       {/* Bottom navigation mobile */}
       <div className="fixed inset-x-0 bottom-0 z-50 md:hidden">
-        <nav className="border-t border-border bg-background">
+        <nav className="border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
           <ul className="flex h-16 items-center justify-around">
             {mobileNavItems.map((item) => {
               const isActive =
@@ -173,7 +173,7 @@ export default function AuthenticatedNavbar() {
       {logoutError && (
         <div
           role="alert"
-          className="fixed right-4 bottom-20 z-50 flex items-center gap-2 rounded-lg border border-destructive/20 bg-background px-3 py-2 text-sm font-medium text-destructive shadow-lg md:bottom-4"
+          className="fixed right-4 bottom-[calc(5rem_+_env(safe-area-inset-bottom))] z-50 flex items-center gap-2 rounded-lg border border-destructive/20 bg-background px-3 py-2 text-sm font-medium text-destructive shadow-lg md:bottom-4"
         >
           <span>{logoutError}</span>
           <Button

@@ -19,13 +19,13 @@ function App() {
       <AuthProvider>
         <div className="flex h-svh flex-col">
           <ConditionalNavbar />
-          <main className="min-h-0 flex-1 pb-16 md:pb-0">
+          <main className="min-h-0 flex-1">
             <Routes>
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
                   <Route path="/inicio" element={<h1>Inicio</h1>} />
                   <Route path="/grupos" element={<GroupsPage />} />
-                  <Route path="/grupos/novo" element={<CreateGroupPage title="Novo grupo" />} />
+                  <Route path="/grupos/novo" element={<CreateGroupPage />} />
                   <Route path="/grupos/convite/:token" element={<InvitePage />} />
                   <Route path="/grupos/:groupId" element={<GroupPage />} />
                   <Route path="/agenda" element={<h1>Agenda</h1>} />
