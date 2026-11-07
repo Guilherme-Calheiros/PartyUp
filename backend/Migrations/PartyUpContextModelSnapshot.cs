@@ -239,6 +239,9 @@ namespace backend.Migrations
                     b.HasIndex("GroupId")
                         .IsUnique();
 
+                    b.HasIndex("Token")
+                        .IsUnique();
+
                     b.ToTable("GroupInvites");
                 });
 

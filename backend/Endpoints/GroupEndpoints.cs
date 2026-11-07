@@ -555,9 +555,10 @@ public static class GroupEndpoints
                 return Results.NotFound();
             }
 
-            if (membership.Role != GroupRole.Owner)
+            if (request.NewRole != GroupRole.Admin &&
+                request.NewRole != GroupRole.Member)
             {
-                return Results.Forbid();
+                return Results.BadRequest("Cargo inválido.");
             }
 
             if (userId == profile.Id)

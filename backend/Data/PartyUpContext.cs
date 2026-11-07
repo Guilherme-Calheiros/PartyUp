@@ -72,6 +72,9 @@ public class PartyUpContext : IdentityDbContext<IdentityUser>
         {
             entity.HasKey(invite => invite.Id);
 
+            entity.HasIndex(invite => invite.Token)
+                .IsUnique();
+
             entity.HasOne(invite => invite.Group)
                 .WithOne(group => group.Invite)
                 .HasForeignKey<GroupInvite>(invite => invite.GroupId)
