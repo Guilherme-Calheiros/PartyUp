@@ -11,5 +11,5 @@ public class UserModel
     public string? ProfilePictureUrl { get; set; }
     public string AvatarSeed { get; set; } = null!;
     public IdentityUser IdentityUser { get; set; } = null!;
-    public ICollection<GroupMember> GroupMemberships { get; set; } = new List<GroupMember>();
+    public ICollection<GroupMemberModel> GroupMemberships { get; set; } = new List<GroupMemberModel>();
 }

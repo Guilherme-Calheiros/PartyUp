@@ -1,6 +1,6 @@
 namespace PartyUp.Models;
 
-public class GroupMember
+public class GroupMemberModel
 {
     public string UserId { get; set; } = null!;
     public UserModel User { get; set; } = null!;

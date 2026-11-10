@@ -11,7 +11,7 @@ public class GroupModel
     public string? GroupPictureUrl { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string? Description { get; set; }
-    public ICollection<GroupMember> Members { get; set; } = new List<GroupMember>();
-    public GroupInvite? Invite { get; set; }
+    public ICollection<GroupMemberModel> Members { get; set; } = new List<GroupMemberModel>();
+    public GroupInviteModel? Invite { get; set; }
 
 }

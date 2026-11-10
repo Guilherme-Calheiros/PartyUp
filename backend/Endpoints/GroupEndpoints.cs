@@ -265,7 +265,7 @@ public static class GroupEndpoints
                 GroupPictureUrl = pictureUrl,
             };
 
-            group.Members.Add(new GroupMember
+            group.Members.Add(new GroupMemberModel
             {
                 UserId = profile.Id,
                 Group = group,
@@ -274,7 +274,7 @@ public static class GroupEndpoints
 
             var token = tokenService.GenerateToken();
 
-            var invite = new GroupInvite
+            var invite = new GroupInviteModel
             {
                 Group = group,
                 Token = token
@@ -708,7 +708,7 @@ public static class GroupEndpoints
 
             if (!isAlreadyMember)
             {
-                var membership = new GroupMember
+                var membership = new GroupMemberModel
                 {
                     UserId = profile.Id,
                     GroupId = invite.GroupId,

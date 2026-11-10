@@ -1,6 +1,6 @@
 namespace PartyUp.Models;
 
-public class GroupInvite
+public class GroupInviteModel
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string GroupId { get; set; } = null!;
