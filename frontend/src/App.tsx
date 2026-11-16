@@ -7,6 +7,7 @@ import GroupsPage from "./pages/GroupsPage";
 import GroupPage from "./pages/GroupPage";
 import InvitePage from "./pages/InvitePage";
 import CreateGroupPage from "./pages/CreateGroupPage";
+import GamesPage from "./pages/GamesPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import GuestRoute from "./components/GuestRoute";
 import ConditionalNavbar from "./components/nav/ConditionalNavBar";
@@ -29,7 +30,7 @@ function App() {
                   <Route path="/grupos/convite/:token" element={<InvitePage />} />
                   <Route path="/grupos/:groupId" element={<GroupPage />} />
                   <Route path="/agenda" element={<h1>Agenda</h1>} />
-                  <Route path="/jogos" element={<h1>Jogos</h1>} />
+                  <Route path="/jogos" element={<GamesPage />} />
                   <Route path="/perfil" element={<ProfilePage />} />
                 </Route>
               </Route>

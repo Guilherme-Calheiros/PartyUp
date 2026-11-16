@@ -3,6 +3,12 @@ export const profileKeys = {
   me: ["profile", "me"] as const,
 };
 
+export const gameKeys = {
+  all: ["games"] as const,
+  trending: () => ["games", "trending"] as const,
+  search: (query: string, pageSize: number) => ["games", "search", { query, pageSize }] as const,
+};
+
 export const groupKeys = {
   all: ["groups"] as const,
   options: ["groups", "options"] as const,
