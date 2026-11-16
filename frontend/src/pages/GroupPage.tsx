@@ -448,11 +448,13 @@ export default function GroupPage() {
               <GroupOverviewTab
                 group={group}
                 onViewAllMembers={() => handleSectionChange("members")}
+                onViewAllGames={() => handleSectionChange("games")}
+                onViewMoreAbout={() => handleSectionChange("about")}
               />
             </TabsPanel>
 
             <TabsPanel value="games">
-              <GroupGamesTab />
+              <GroupGamesTab groupId={group.id} />
             </TabsPanel>
 
             <TabsPanel value="schedule">
