@@ -10,7 +10,7 @@ import CreateGroupPage from "./pages/CreateGroupPage";
 import GamesPage from "./pages/GamesPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import GuestRoute from "./components/GuestRoute";
-import ConditionalNavbar from "./components/nav/ConditionalNavBar";
+import ConditionalNavbar from "./components/nav/ConditionalNavbar";
 import { AuthProvider } from "./contexts/AuthContext";
 import AppLayout from "./components/layout/AppLayout";
 
