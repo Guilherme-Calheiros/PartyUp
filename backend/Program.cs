@@ -1,3 +1,4 @@
+using PartyUp.Services;
 using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -43,5 +44,6 @@ app.MapGet("/health/db", async (PartyUpContext db) =>
 app.MapAuthEndpoints();
 app.MapProfileEndpoints();
 app.MapGroupEndpoints();
+app.MapGamesEndpoints();
 
 app.Run();

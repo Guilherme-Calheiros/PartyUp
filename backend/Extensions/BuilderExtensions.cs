@@ -57,6 +57,9 @@ public static class BuilderExtensions
 
         builder.Services.AddScoped<InviteTokenService>();
 
+        builder.Services.AddMemoryCache();
+        builder.Services.AddHttpClient<IgdbService>();
+
         return builder;
     }
 }
