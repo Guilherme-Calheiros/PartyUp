@@ -218,7 +218,48 @@ namespace backend.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("PartyUp.Models.GroupInvite", b =>
+            modelBuilder.Entity("PartyUp.Models.GameModel", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CoverImageId")
+                        .HasColumnType("text");
+
+                    b.Property<int>("IgdbId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IgdbId")
+                        .IsUnique();
+
+                    b.ToTable("Games");
+                });
+
+            modelBuilder.Entity("PartyUp.Models.GroupGameModel", b =>
+                {
+                    b.Property<string>("GroupId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GameId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("GroupId", "GameId");
+
+                    b.HasIndex("GameId");
+
+                    b.ToTable("GroupGames");
+                });
+
+            modelBuilder.Entity("PartyUp.Models.GroupInviteModel", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
@@ -245,7 +286,7 @@ namespace backend.Migrations
                     b.ToTable("GroupInvites");
                 });
 
-            modelBuilder.Entity("PartyUp.Models.GroupMember", b =>
+            modelBuilder.Entity("PartyUp.Models.GroupMemberModel", b =>
                 {
                     b.Property<string>("UserId")
                         .HasColumnType("text");
@@ -386,18 +427,37 @@ namespace backend.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("PartyUp.Models.GroupInvite", b =>
+            modelBuilder.Entity("PartyUp.Models.GroupGameModel", b =>
+                {
+                    b.HasOne("PartyUp.Models.GameModel", "Game")
+                        .WithMany("GroupGames")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PartyUp.Models.GroupModel", "Group")
+                        .WithMany("Games")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("Group");
+                });
+
+            modelBuilder.Entity("PartyUp.Models.GroupInviteModel", b =>
                 {
                     b.HasOne("PartyUp.Models.GroupModel", "Group")
                         .WithOne("Invite")
-                        .HasForeignKey("PartyUp.Models.GroupInvite", "GroupId")
+                        .HasForeignKey("PartyUp.Models.GroupInviteModel", "GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Group");
                 });
 
-            modelBuilder.Entity("PartyUp.Models.GroupMember", b =>
+            modelBuilder.Entity("PartyUp.Models.GroupMemberModel", b =>
                 {
                     b.HasOne("PartyUp.Models.GroupModel", "Group")
                         .WithMany("Members")
@@ -438,8 +498,15 @@ namespace backend.Migrations
                     b.Navigation("IdentityUser");
                 });
 
+            modelBuilder.Entity("PartyUp.Models.GameModel", b =>
+                {
+                    b.Navigation("GroupGames");
+                });
+
             modelBuilder.Entity("PartyUp.Models.GroupModel", b =>
                 {
+                    b.Navigation("Games");
+
                     b.Navigation("Invite");
 
                     b.Navigation("Members");

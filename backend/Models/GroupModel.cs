@@ -12,6 +12,7 @@ public class GroupModel
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string? Description { get; set; }
     public ICollection<GroupMemberModel> Members { get; set; } = new List<GroupMemberModel>();
+    public ICollection<GroupGameModel> Games { get; set; } = new List<GroupGameModel>();
     public GroupInviteModel? Invite { get; set; }
 
 }

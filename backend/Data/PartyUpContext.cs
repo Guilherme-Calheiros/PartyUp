@@ -15,6 +15,8 @@ public class PartyUpContext : IdentityDbContext<IdentityUser>
     public DbSet<GroupModel> Groups { get; set; } = null!;
     public DbSet<GroupMemberModel> GroupMembers { get; set; } = null!;
     public DbSet<GroupInviteModel> GroupInvites { get; set; } = null!;
+    public DbSet<GameModel> Games { get; set; } = null!;
+    public DbSet<GroupGameModel> GroupGames { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -78,6 +80,36 @@ public class PartyUpContext : IdentityDbContext<IdentityUser>
             entity.HasOne(invite => invite.Group)
                 .WithOne(group => group.Invite)
                 .HasForeignKey<GroupInviteModel>(invite => invite.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<GameModel>(entity =>
+        {
+            entity.HasKey(game => game.Id);
+
+            entity.HasIndex(game => game.IgdbId)
+                .IsUnique();
+
+            entity.Property(game => game.Name)
+                .IsRequired();
+        });
+
+        builder.Entity<GroupGameModel>(entity =>
+        {
+            entity.HasKey(groupGame => new
+            {
+                groupGame.GroupId,
+                groupGame.GameId
+            });
+
+            entity.HasOne(groupGame => groupGame.Group)
+                .WithMany(group => group.Games)
+                .HasForeignKey(groupGame => groupGame.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(groupGame => groupGame.Game)
+                .WithMany(game => game.GroupGames)
+                .HasForeignKey(groupGame => groupGame.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
