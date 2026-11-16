@@ -3,7 +3,8 @@ import { Users } from "lucide-react";
 import EmptyState from "@/components/common/EmptyState";
 import ErrorState from "@/components/common/ErrorState";
 import GroupMemberActions from "@/components/group/GroupMemberActions";
-import GroupMemberRow from "@/components/group/GroupMemberRow";
+import MemberList from "@/components/group/MemberList";
+import MemberListSkeleton from "@/components/group/MemberListSkeleton";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,16 +20,7 @@ function MembersSkeleton() {
   return (
     <Card className="gap-4 px-5 py-5 sm:px-6" role="status" aria-busy="true">
       <Skeleton className="h-5 w-28" />
-
-      <div className="flex flex-col gap-2">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <div key={index} className="flex items-center gap-3 py-1.5">
-            <Skeleton className="size-9 shrink-0 rounded-full" />
-            <Skeleton className="h-4 w-1/3" />
-          </div>
-        ))}
-      </div>
-
+      <MemberListSkeleton count={5} />
       <span className="sr-only">Carregando membros</span>
     </Card>
   );
@@ -66,22 +58,17 @@ export default function GroupMembersTab({ groupId, viewerRole }: GroupMembersTab
     <Card className="gap-4 px-5 py-5 sm:px-6">
       <h2 className="font-heading text-lg font-medium">Membros</h2>
 
-      <ul className="flex flex-col gap-2">
-        {members.map((member) => (
-          <GroupMemberRow
-            key={member.userId}
+      <MemberList
+        members={members}
+        renderActions={(member) => (
+          <GroupMemberActions
+            groupId={groupId}
             member={member}
-            actions={
-              <GroupMemberActions
-                groupId={groupId}
-                member={member}
-                viewerId={user?.id}
-                viewerRole={viewerRole}
-              />
-            }
+            viewerId={user?.id}
+            viewerRole={viewerRole}
           />
-        ))}
-      </ul>
+        )}
+      />
     </Card>
   );
 }
