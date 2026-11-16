@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using PartyUp.Constants;
 using PartyUp.Contracts.Common;
 using PartyUp.Contracts.Group;
+using PartyUp.Contracts.Games;
 using PartyUp.Models;
 using PartyUp.Services;
 
@@ -888,6 +889,187 @@ public static class GroupEndpoints
             }
 
             context.Groups.Remove(membership.Group);
+            await context.SaveChangesAsync();
+
+            return Results.NoContent();
+        });
+
+        groups.MapGet("{groupId}/games", async (
+            string groupId,
+            ClaimsPrincipal user,
+            PartyUpContext context) =>
+        {
+            var (profile, _) = await user.GetProfileAsync(context);
+
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var isMember = await context.GroupMembers
+                .AnyAsync(member =>
+                    member.GroupId == groupId &&
+                    member.UserId == profile.Id
+                );
+
+            if (!isMember)
+            {
+                return Results.Forbid();
+            }
+
+            var games = await context.GroupGames
+                .AsNoTracking()
+                .Where(groupGames =>
+                    groupGames.GroupId == groupId
+                )
+                .Select(groupGames => new
+                {
+                    groupGames.Game.Id,
+                    groupGames.Game.IgdbId,
+                    groupGames.Game.Name,
+                    groupGames.Game.CoverImageId
+                })
+                .ToListAsync();
+
+            return Results.Ok(games);
+        });
+
+        groups.MapPost("{groupId}/games", async (
+            string groupId,
+            [FromBody] List<IgdbGames> request,
+            ClaimsPrincipal user,
+            PartyUpContext context) =>
+        {
+            var (profile, _) = await user.GetProfileAsync(context);
+
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            if (request.Count == 0)
+            {
+                return Results.BadRequest("Nenhum jogo informado");
+            }
+
+            if (request.Count > 15)
+            {
+                return Results.BadRequest("Limite de jogos por requisição");
+            }
+
+            var isMember = await context.GroupMembers
+                .AnyAsync(member =>
+                    member.GroupId == groupId &&
+                    member.UserId == profile.Id
+                );
+
+            if (!isMember)
+            {
+                return Results.Forbid();
+            }
+
+            var gamesRequest = request
+                .DistinctBy(game => game.Id)
+                .ToList();
+
+            var igdbIds = gamesRequest
+                .Select(game => game.Id)
+                .ToList();
+
+            var existingGames = await context.Games
+                .Where(game => igdbIds.Contains(game.IgdbId))
+                .ToListAsync();
+
+            var existingGroupGameIds = (await context.GroupGames
+                .Where(groupGames =>
+                    groupGames.GroupId == groupId &&
+                    igdbIds.Contains(groupGames.Game.IgdbId)
+                )
+                .Select(groupGames => groupGames.Game.IgdbId)
+                .ToListAsync())
+                .ToHashSet();
+
+            var newGroupGames = new List<GroupGameModel>();
+
+            foreach (var item in gamesRequest)
+            {
+                var game = existingGames
+                    .FirstOrDefault(g => g.IgdbId == item.Id);
+
+                if (request.Any(game =>
+                    game.Id <= 0 ||
+                    string.IsNullOrWhiteSpace(game.Name)))
+                {
+                    return Results.BadRequest("Dados de jogos inválidos.");
+                }
+
+                if (game is null)
+                {
+                    game = new GameModel
+                    {
+                        IgdbId = item.Id,
+                        Name = item.Name,
+                        CoverImageId = item.Cover?.ImageId
+                    };
+
+                    context.Games.Add(game);
+                    existingGames.Add(game);
+                }
+
+                if (existingGroupGameIds.Contains(item.Id))
+                {
+                    continue;
+                }
+
+                newGroupGames.Add(new GroupGameModel
+                {
+                    GroupId = groupId,
+                    GameId = game.Id
+                });
+            }
+
+            context.GroupGames.AddRange(newGroupGames);
+            await context.SaveChangesAsync();
+
+            return Results.Ok(newGroupGames.Count);
+        });
+
+        groups.MapDelete("{groupId}/games/{gameId}", async (
+            string groupId,
+            string gameId,
+            PartyUpContext context,
+            ClaimsPrincipal user) =>
+        {
+            var (profile, _) = await user.GetProfileAsync(context);
+
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var isMember = await context.GroupMembers
+                .AnyAsync(member =>
+                    member.GroupId == groupId &&
+                    member.UserId == profile.Id
+                );
+
+            if (!isMember)
+            {
+                return Results.NotFound();
+            }
+
+            var game = await context.GroupGames
+                .FirstOrDefaultAsync(groupGame =>
+                    groupGame.GroupId == groupId &&
+                    groupGame.GameId == gameId
+                );
+
+            if (game is null)
+            {
+                return Results.Forbid();
+            }
+
+            context.GroupGames.Remove(game);
             await context.SaveChangesAsync();
 
             return Results.NoContent();
