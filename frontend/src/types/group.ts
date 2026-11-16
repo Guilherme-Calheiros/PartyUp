@@ -40,6 +40,14 @@ export type GroupMember = {
   role: GroupRole;
 };
 
+export type GroupGame = {
+  id: string;
+  igdbId: number;
+  name: string;
+  coverImageId: string | null;
+  coverUrl: string | null;
+};
+
 export type PagedGroups = {
   items: GroupSummary[];
   page: number;

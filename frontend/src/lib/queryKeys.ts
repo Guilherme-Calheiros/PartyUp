@@ -16,6 +16,7 @@ export const groupKeys = {
     ["groups", "list", { page, pageSize, role }] as const,
   detail: (groupId: string) => ["groups", "detail", groupId] as const,
   members: (groupId: string) => ["groups", "detail", groupId, "members"] as const,
+  games: (groupId: string) => ["groups", "detail", groupId, "games"] as const,
   invite: (groupId: string) => ["groups", "detail", groupId, "invite"] as const,
   inviteByToken: (token: string) => ["invites", token] as const,
 };
