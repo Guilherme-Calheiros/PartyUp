@@ -1,3 +1,4 @@
+import FullPageLoader from "@/components/common/FullPageLoader";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, Outlet, useLocation } from "react-router";
@@ -7,7 +8,7 @@ export default function ProtectedRoute() {
   const location = useLocation();
 
   if (isLoading) {
-    return <p>Carregando...</p>;
+    return <FullPageLoader />;
   }
 
   if (authError && !isAuthenticated) {

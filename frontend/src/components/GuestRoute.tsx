@@ -1,11 +1,12 @@
 import { Navigate, Outlet } from "react-router";
+import FullPageLoader from "@/components/common/FullPageLoader";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function GuestRoute() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <p>Carregando...</p>;
+    return <FullPageLoader />;
   }
 
   if (isAuthenticated) {
