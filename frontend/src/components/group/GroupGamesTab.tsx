@@ -9,6 +9,13 @@ import GamePosterSkeleton from "@/components/game/GamePosterSkeleton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import {
   Dialog,
   DialogClose,
   DialogContent,
@@ -207,7 +214,7 @@ export default function GroupGamesTab({ groupId }: GroupGamesTabProps) {
       )}
 
       <Dialog open={isAddGameOpen} onOpenChange={handleDialogOpenChange}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col overflow-hidden sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Adicionar jogos</DialogTitle>
             <DialogDescription>
@@ -232,7 +239,11 @@ export default function GroupGamesTab({ groupId }: GroupGamesTabProps) {
           </div>
 
           {pendingGames.length > 0 && (
-            <div className="flex flex-col gap-2">
+            <Carousel
+              opts={{ align: "start" }}
+              className="flex w-full min-w-0 flex-col gap-2"
+              aria-label="Jogos selecionados"
+            >
               <div className="flex items-center justify-between gap-2">
                 <p className="flex items-center gap-1.5 text-sm font-medium">
                   Selecionados
@@ -241,22 +252,24 @@ export default function GroupGamesTab({ groupId }: GroupGamesTabProps) {
                   </span>
                 </p>
 
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  className="text-muted-foreground hover:text-foreground"
-                  onClick={() => setPendingGames([])}
-                >
-                  Limpar
-                </Button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <CarouselPrevious className="static translate-x-0 translate-y-0" />
+                  <CarouselNext className="static translate-x-0 translate-y-0" />
+
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() => setPendingGames([])}
+                  >
+                    Limpar
+                  </Button>
+                </div>
               </div>
 
-              <ul
-                aria-label="Jogos selecionados"
-                className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1"
-              >
+              <CarouselContent className="-ml-2">
                 {pendingGames.map((game) => (
-                  <li key={game.id} className="snap-start">
+                  <CarouselItem key={game.id} className="basis-auto pl-2">
                     <GamePoster game={game} size="xs" rounded="md" caption="xs">
                       <Button
                         type="button"
@@ -270,13 +283,13 @@ export default function GroupGamesTab({ groupId }: GroupGamesTabProps) {
                         <X aria-hidden="true" />
                       </Button>
                     </GamePoster>
-                  </li>
+                  </CarouselItem>
                 ))}
-              </ul>
-            </div>
+              </CarouselContent>
+            </Carousel>
           )}
 
-          <div className="max-h-72 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {!canSearch ? (
               <p className="px-2 py-10 text-center text-sm text-muted-foreground">
                 Digite pelo menos {MIN_SEARCH_LENGTH} caracteres para pesquisar.
